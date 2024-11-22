@@ -1,0 +1,4 @@
+# Ignore sled database files
+counter_db/snap.*
+counter_db/log.*
+counter_db/*.db
