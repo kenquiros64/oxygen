@@ -1,4 +1,4 @@
-use crate::db::counter;
+use crate::repository::counter;
 use crate::state::AppState;
 
 #[tauri::command]

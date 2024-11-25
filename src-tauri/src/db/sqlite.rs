@@ -18,21 +18,24 @@ pub fn initialize_tables(connection: &Connection) -> Result<(), rusqlite::Error>
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             departure TEXT NOT NULL,
             destination TEXT NOT NULL,
-            stops TEXT NOT NULL,
             timetable INTEGER NOT NULL,
-            FOREIGN KEY (timetable) REFERENCES timetables (id)
+            holiday_timetable INTEGER NOT NULL,
+            FOREIGN KEY (timetable) REFERENCES timetables (id),
+            FOREIGN KEY (holiday_timetable) REFERENCES timetables (id)
         );
     "#;
 
     let create_stops_table = r#"
         CREATE TABLE IF NOT EXISTS stops (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            route_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             code TEXT UNIQUE NOT NULL,
             position INTEGER NOT NULL,
-            fare REAL NOT NULL,
-            gold_fare REAL NOT NULL,
-            is_main BOOLEAN NOT NULL
+            fare INTEGER NOT NULL,
+            gold_fare INTEGER NOT NULL,
+            is_main BOOLEAN NOT NULL,
+            FOREIGN KEY (route_id) REFERENCES routes (id)
         );
     "#;
 
@@ -58,7 +61,6 @@ pub fn initialize_tables(connection: &Connection) -> Result<(), rusqlite::Error>
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user TEXT NOT NULL,
-            tickets INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user) REFERENCES users (username)
@@ -75,10 +77,17 @@ pub fn initialize_tables(connection: &Connection) -> Result<(), rusqlite::Error>
     let create_times_table = r#"
         CREATE TABLE IF NOT EXISTS times (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timetable_id INTEGER NOT NULL,
             hour INTEGER NOT NULL,
-            minute INTEGER NOT NULL,
-            FOREIGN KEY (timetable_id) REFERENCES timetables (id)
+            minute INTEGER NOT NULL
+        );
+    "#;
+
+    let create_report_tickets_table = r#"
+        CREATE TABLE IF NOT EXISTS report_tickets (
+            report_id INTEGER NOT NULL,
+            ticket_id INTEGER NOT NULL,
+            FOREIGN KEY (report_id) REFERENCES reports (id),
+            FOREIGN KEY (ticket_id) REFERENCES tickets (id)
         );
     "#;
 
@@ -89,6 +98,7 @@ pub fn initialize_tables(connection: &Connection) -> Result<(), rusqlite::Error>
     connection.execute(create_reports_table, [])?;
     connection.execute(create_timetables_table, [])?;
     connection.execute(create_times_table, [])?;
+    connection.execute(create_report_tickets_table, [])?;
 
     println!("All tables initialized successfully.");
     Ok(())
