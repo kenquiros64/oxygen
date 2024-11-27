@@ -10,9 +10,9 @@ pub async fn sync_users() -> Result<(), anyhow::Error> {
         .await
         .context("Failed to connect to MongoDB")?;
 
-    let polodb = polo::connect_polo();
+    let polo = polo::connect_polo();
 
-    let polo_repo = PoloUsersRepository::new(&polodb);
+    let polo_repo = PoloUsersRepository::new(&polo);
     let mongo_repo = MongoUsersRepository::new(&mongodb);
 
     let users = mongo_repo.fetch_users().await

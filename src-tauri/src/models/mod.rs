@@ -1,5 +1,4 @@
 pub mod user;
 pub mod route;
-pub mod stop;
-pub mod timetable;
-pub mod time;
+pub mod ticket;
+pub mod report;

@@ -25,23 +25,29 @@ impl RoutesRepository{
     }
     
     // fetch_routes fetches all routes from the database
-    pub fn fetch_routes(&self) -> Result<Vec<Route>> {
+    pub fn fetch_routes(&self) -> Result<Vec<Route>, anyhow::Error> {
         let mut cursor = self.coll.find(doc! {}).run()?;
 
         let mut routes = Vec::new();
 
-        while let Some(route) = cursor.next() {
-            routes.push(route.context("Failed to get route")?);
+        while let Some(user) = cursor.next() {
+            routes.push(user.context("Failed to get user")?);
         }
 
         Ok(routes)
     }
 
     // update_route updates a route in the database
-    pub fn update_route(&self, route: Route) -> Result<()> {
+    pub  fn update_route(&self, route: Route) -> std::result::Result<(), anyhow::Error> {
         self.coll.update_one(doc! {"_id": route.id}, to_document(&route).unwrap())
             .context("Failed to update route")?;
 
+        Ok(())
+    }
+
+    // clear removes all routes from the database
+    pub fn clear(&self) -> Result<()> {
+        self.coll.delete_many(doc! {})?;
         Ok(())
     }
 }

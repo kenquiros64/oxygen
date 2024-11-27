@@ -22,7 +22,7 @@ impl UserRepository{
     }
 
     // add_user adds a new user in the database if username does not exist
-    pub async fn add_user(&self, user: User) -> Result<(), anyhow::Error> {
+    pub async fn add_user(&self, user: User) -> Result<bool, anyhow::Error> {
         let user_exists = self.coll.find_one(doc! { "username": &user.username })
             .await
             .context("Failed to check if user exists")?;
@@ -47,7 +47,7 @@ impl UserRepository{
             .await
             .context("Failed to insert user")?;
 
-        Ok(())
+        Ok(true)
     }
     
     // fetch_users fetches all users from the database
@@ -55,21 +55,18 @@ impl UserRepository{
         let mut cursor = self.coll.find(doc! {})
             .await?;
 
-            let mut users = Vec::new();
+        let mut users = Vec::new();
 
-            while let Some(user) = cursor.next().await {
-                users.push(user.context("Failed to get user")?);
-            }
+        while let Some(user) = cursor.next().await {
+            users.push(user.context("Failed to get user")?);
+        }
 
         Ok(users)
     }
 
 
     // update_user updates a user in the database
-    pub async fn update_user(&self, mut user: User) -> Result<(), anyhow::Error> {
-        let hashed_password = bcrypt::hash(user.password, bcrypt::DEFAULT_COST).context("Failed to hash password")?;
-        user.password = hashed_password;
-        
+    pub async fn update_user(&self, user: User) -> Result<(), anyhow::Error> {
         self.coll.update_one(doc! { "username": &user.username }, doc! { "$set": to_document(&user).unwrap() })
             .await
             .context("Failed to update user")?;
