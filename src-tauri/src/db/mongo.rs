@@ -1,5 +1,9 @@
-use anyhow::{Result, Context};
-use mongodb::{bson::doc, options::{ClientOptions, ServerApi, ServerApiVersion}, Client, Database};
+use anyhow::{Context, Result};
+use mongodb::{
+    bson::doc,
+    options::{ClientOptions, ServerApi, ServerApiVersion},
+    Client, Database,
+};
 
 const MONGO_URL: &str = "mongodb+srv://neon:qmdwHgtheAX3gelm@titaniumcluster.yblhh.mongodb.net/\
                          ?retryWrites=true&w=majority&appName=TitaniumCluster";
@@ -15,8 +19,8 @@ pub async fn connect_mongo() -> Result<Database, anyhow::Error> {
     let server_api = ServerApi::builder().version(ServerApiVersion::V1).build();
     client_options.server_api = Some(server_api);
 
-    let client = Client::with_options(client_options)
-        .context("Failed to initialize MongoDB client")?;
+    let client =
+        Client::with_options(client_options).context("Failed to initialize MongoDB client")?;
 
     let db = client.database(MONGO_DB);
 

@@ -6,6 +6,4 @@
 # will have schema files for capabilities auto-completion
 /gen/schemas
 
-/polo_db
-/dev_data
-/counter_db
+/db

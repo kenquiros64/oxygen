@@ -1,12 +1,11 @@
-use anyhow::Context;
 use crate::models::ticket::Ticket;
+use anyhow::Context;
 
 pub struct TicketRepository {
     db: rusqlite::Connection,
 }
 
 impl TicketRepository {
-
     // new creates a new instance of the TicketRepository
     pub fn new(db: rusqlite::Connection) -> Self {
         TicketRepository { db }
@@ -17,7 +16,8 @@ impl TicketRepository {
         let mut stmt = self.db.prepare(
             "INSERT INTO tickets (departure, destination, stop, username, fare, time, is_gold, \
                  is_null, report_id, created_at, updated_at) \
-                 VALUES (?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)")?;
+                 VALUES (?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        )?;
         stmt.execute(&[
             &ticket.departure,
             &ticket.destination,
@@ -30,7 +30,8 @@ impl TicketRepository {
             &ticket.report_id.to_string(),
             &ticket.created_at,
             &ticket.updated_at,
-        ]).context("Failed to insert ticket")?;
+        ])
+        .context("Failed to insert ticket")?;
 
         Ok(())
     }
@@ -80,14 +81,22 @@ impl TicketRepository {
             &ticket.report_id.to_string(),
             &ticket.created_at,
             &ticket.updated_at,
-        ]).context("Failed to update ticket")?;
+        ])
+        .context("Failed to update ticket")?;
 
         Ok(())
     }
 
     // fetch_tickets_by_username_created_at_report_id fetches all tickets from the database
-    pub fn fetch_tickets_by_username_created_at_report_id(&self, username: &str, created_at: &str, report_id: &str) -> Result<Vec<Ticket>, anyhow::Error> {
-        let mut stmt = self.db.prepare("SELECT * FROM tickets WHERE username = ?1 AND created_at = ?2 AND report_id = ?3")?;
+    pub fn fetch_tickets_by_username_created_at_report_id(
+        &self,
+        username: &str,
+        created_at: &str,
+        report_id: &str,
+    ) -> Result<Vec<Ticket>, anyhow::Error> {
+        let mut stmt = self.db.prepare(
+            "SELECT * FROM tickets WHERE username = ?1 AND created_at = ?2 AND report_id = ?3",
+        )?;
         let mut rows = stmt.query(&[&username, &created_at, &report_id])?;
 
         let mut tickets = Vec::new();

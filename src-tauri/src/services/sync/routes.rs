@@ -1,7 +1,7 @@
-use anyhow::Context;
 use crate::db::{mongo, polo};
 use crate::repository::local::route::RoutesRepository as PoloURoutesRepository;
 use crate::repository::remote::route::RoutesRepository as MongoRoutesRepository;
+use anyhow::Context;
 
 // sync_routes syncs the routes from mongodb to polo db
 pub async fn sync_routes() -> Result<(), anyhow::Error> {
@@ -14,7 +14,9 @@ pub async fn sync_routes() -> Result<(), anyhow::Error> {
     let polo_repo = PoloURoutesRepository::new(&polo);
     let mongo_repo = MongoRoutesRepository::new(&mongodb);
 
-    let routes = mongo_repo.fetch_routes().await
+    let routes = mongo_repo
+        .fetch_routes()
+        .await
         .context("Failed to fetch routes from MongoDB")?;
 
     match polo_repo.clear().context("Failed to clear PoloDB") {
@@ -23,7 +25,9 @@ pub async fn sync_routes() -> Result<(), anyhow::Error> {
     }
 
     for route in routes {
-        polo_repo.add_route(route).context("Failed to add route to PoloDB")?;
+        polo_repo
+            .add_route(route)
+            .context("Failed to add route to PoloDB")?;
     }
 
     println!("Route synchronization completed successfully.");

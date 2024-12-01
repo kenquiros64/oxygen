@@ -1,18 +1,19 @@
+pub mod commands;
 pub mod db;
 pub mod models;
 pub mod repository;
-pub mod commands;
-pub mod state;
 pub mod services;
+pub mod state;
 
-use std::sync::{Mutex};
-use tauri::Manager;
-use state::AppState;
 use crate::db::mongo;
+use state::AppState;
+use std::sync::Mutex;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .setup(|app| {
             let connection = match db::sqlite::initialize(&app.handle()) {
                 Ok(conn) => {
@@ -26,8 +27,6 @@ pub fn run() {
             };
 
             let counter_db = db::sled::initialize_counter_db();
-
-
 
             // Check and reset counters based on the stored date
             repository::counter::check_and_reset_counter(&counter_db);
@@ -47,28 +46,29 @@ pub fn run() {
                     .expect("Failed to connect to MongoDB");
 
                 let repo = repository::remote::user::UserRepository::new(&mongodb);
-                if let Err(e) = repo.add_user(models::user::User {
-                    id: None,
-                    username: "admin".to_string(),
-                    password: "test".to_string(),
-                    name: "admin".to_string(),
-                    role: "admin".to_string(),
-                    created_at: chrono::Utc::now().to_rfc3339(),
-                    last_update: chrono::Utc::now().to_rfc3339(),
-                }).await {
+                if let Err(e) = repo
+                    .add_user(models::user::User {
+                        id: None,
+                        username: "admin".to_string(),
+                        password: "test".to_string(),
+                        name: "admin".to_string(),
+                        role: "admin".to_string(),
+                        created_at: chrono::Utc::now().to_rfc3339(),
+                        last_update: chrono::Utc::now().to_rfc3339(),
+                    })
+                    .await
+                {
                     eprintln!("Error adding user: {:#}", e);
                 }
             });
-
-
 
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             commands::counter::greet,
-            commands::counter::increment_stop_counter,
-            commands::counter::get_stop_counter
+            // commands::counter::increment_stop_counter,
+            // commands::counter::get_stop_counter
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

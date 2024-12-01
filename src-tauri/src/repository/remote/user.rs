@@ -1,20 +1,20 @@
-use bcrypt;
-use anyhow::{Result, Context};
-use chrono::Utc;
-use mongodb::{Collection, Database};
-use futures::stream::StreamExt;
-use mongodb::bson::{doc, to_document};
-use mongodb::bson::oid::ObjectId;
 use crate::models::user::User;
+use anyhow::{Context, Result};
+use bcrypt;
+use chrono::Utc;
+use futures::stream::StreamExt;
+use mongodb::bson::oid::ObjectId;
+use mongodb::bson::{doc, to_document};
+use mongodb::{Collection, Database};
 
 const USER_COLLECTION: &str = "users";
 
 // UserRepository is the repository for the users collection
 pub struct UserRepository {
-    coll: Collection<User>
+    coll: Collection<User>,
 }
 
-impl UserRepository{
+impl UserRepository {
     // new creates a new instance of the UserRepository
     pub fn new(db: &Database) -> Self {
         let coll = db.collection(USER_COLLECTION);
@@ -23,7 +23,9 @@ impl UserRepository{
 
     // add_user adds a new user in the database if username does not exist
     pub async fn add_user(&self, user: User) -> Result<bool, anyhow::Error> {
-        let user_exists = self.coll.find_one(doc! { "username": &user.username })
+        let user_exists = self
+            .coll
+            .find_one(doc! { "username": &user.username })
             .await
             .context("Failed to check if user exists")?;
 
@@ -31,7 +33,8 @@ impl UserRepository{
             return Err(anyhow::anyhow!("User already exists"));
         }
 
-        let hashed_password = bcrypt::hash(user.password, bcrypt::DEFAULT_COST).context("Failed to hash password")?;
+        let hashed_password =
+            bcrypt::hash(user.password, bcrypt::DEFAULT_COST).context("Failed to hash password")?;
 
         let new_user = User {
             id: Some(ObjectId::new()),
@@ -43,17 +46,17 @@ impl UserRepository{
             last_update: Utc::now().to_rfc3339(),
         };
 
-        self.coll.insert_one(new_user)
+        self.coll
+            .insert_one(new_user)
             .await
             .context("Failed to insert user")?;
 
         Ok(true)
     }
-    
+
     // fetch_users fetches all users from the database
     pub async fn fetch_users(&self) -> Result<Vec<User>, anyhow::Error> {
-        let mut cursor = self.coll.find(doc! {})
-            .await?;
+        let mut cursor = self.coll.find(doc! {}).await?;
 
         let mut users = Vec::new();
 
@@ -64,10 +67,13 @@ impl UserRepository{
         Ok(users)
     }
 
-
     // update_user updates a user in the database
     pub async fn update_user(&self, user: User) -> Result<(), anyhow::Error> {
-        self.coll.update_one(doc! { "username": &user.username }, doc! { "$set": to_document(&user).unwrap() })
+        self.coll
+            .update_one(
+                doc! { "username": &user.username },
+                doc! { "$set": to_document(&user).unwrap() },
+            )
             .await
             .context("Failed to update user")?;
 

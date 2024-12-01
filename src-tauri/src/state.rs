@@ -1,6 +1,6 @@
-use std::sync::{Mutex};
 use rusqlite::Connection;
 use sled::Db;
+use std::sync::Mutex;
 
 // Define the AppState struct to hold app state
 pub struct AppState {

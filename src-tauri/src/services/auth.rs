@@ -1,6 +1,6 @@
-use anyhow::Context;
 use crate::db::{mongo, polo};
 use crate::models::user::User;
+use anyhow::Context;
 use bcrypt;
 
 // login logs in a user

@@ -1,7 +1,6 @@
-
-use tauri::{AppHandle, Manager};
-use std::path::PathBuf;
 use rusqlite::{Connection, Error};
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager};
 
 // initialize_tables initializes the SQLite database tables
 pub fn initialize_tables(connection: &Connection) -> Result<(), rusqlite::Error> {
@@ -49,7 +48,8 @@ pub fn get_db_path(app_handle: &AppHandle) -> PathBuf {
         dev_path.push("oxygen.db");
 
         if let Some(parent) = dev_path.parent() {
-            std::fs::create_dir_all(parent).expect("failed to create development database directory");
+            std::fs::create_dir_all(parent)
+                .expect("failed to create development database directory");
         } else {
             panic!("Invalid path: no parent directory found for development database path");
         }
