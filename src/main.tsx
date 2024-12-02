@@ -7,9 +7,9 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
+      <CssBaseline />
       <ThemeProvider>
-        <CssBaseline />
-        <App />
+          <App />
       </ThemeProvider>
   </React.StrictMode>,
 );

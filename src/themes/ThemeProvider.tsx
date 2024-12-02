@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useState, useEffect, useContext, ReactNode } from "react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
-import { lightTheme, darkTheme } from "./Themes.tsx";
-import {LazyStore} from "@tauri-apps/plugin-store";
+import { LazyStore } from "@tauri-apps/plugin-store";
+import {darkTheme, lightTheme} from "./Themes.tsx";
 
 type Theme = "light" | "dark";
 
@@ -11,16 +11,15 @@ interface ThemeContextProps {
     setTheme: (theme: Theme) => void;
 }
 
-// Create the context
-const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
-
-// Create the store instance
+// Create the Tauri store instance
 const store = new LazyStore(".settings.dat");
+
+const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [theme, setThemeState] = useState<Theme>("light");
 
-    // Helper to save theme to the Tauri store
+    // Save theme to Tauri store
     const saveTheme = async (theme: Theme) => {
         try {
             await store.set("theme", theme);
@@ -30,7 +29,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    // Helper to load theme from the Tauri store
+    // Load theme from Tauri store
     const loadTheme = async () => {
         try {
             const storedTheme = await store.get("theme");
@@ -42,25 +41,23 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    // Update theme state and save to store
-    const setTheme = (newTheme: Theme) => {
-        setThemeState(newTheme);
-        saveTheme(newTheme);
+    const setTheme = (theme: Theme) => {
+        setThemeState(theme);
+        saveTheme(theme).then(() => console.log("Theme saved"));
     };
 
-    // Toggle theme between light and dark
     const toggleTheme = () => {
         const newTheme = theme === "light" ? "dark" : "light";
         setTheme(newTheme);
     };
 
-    // Load theme on initial mount
     useEffect(() => {
-        loadTheme();
+        loadTheme().then(() => console.log("Theme loaded"));
     }, []);
 
     return (
         <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+            {/* Apply the correct theme */}
             <MuiThemeProvider theme={theme === "light" ? lightTheme : darkTheme}>
                 {children}
             </MuiThemeProvider>
@@ -68,7 +65,6 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
 };
 
-// Custom hook for consuming the context
 export const useTheme = (): ThemeContextProps => {
     const context = useContext(ThemeContext);
     if (!context) {

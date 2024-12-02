@@ -1,8 +1,5 @@
-import React from "react";
-import { styled, Theme, CSSObject } from "@mui/material/styles";
+import React, {useEffect} from "react";
 import Box from "@mui/material/Box";
-import MuiDrawer from "@mui/material/Drawer";
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import List from "@mui/material/List";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -15,101 +12,52 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import {Outlet} from "react-router-dom";
+import {Outlet, useLocation} from "react-router-dom";
 import {
   Logout,
   NotesOutlined,
   RouteOutlined,
 } from "@mui/icons-material";
+import {useNavigate} from "react-router";
+import {HomeAppBar, HomeDrawer, HomeDrawerHeader} from "../components/HomeDrawer.tsx";
+import {ThemeSwitch} from "../components/ThemeSwitch.tsx";
+import {useTheme} from "../themes/ThemeProvider.tsx";
+import {useAuthStore} from "../store/AuthStore.ts";
 
-const drawerWidth = 240;
-
-const openedMixin = (theme: Theme): CSSObject => ({
-  width: drawerWidth,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: "hidden",
-});
-
-const closedMixin = (theme: Theme): CSSObject => ({
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: "hidden",
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  [theme.breakpoints.up("sm")]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
-  },
-});
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
-  ...theme.mixins.toolbar,
-}));
-
-interface AppBarProps extends MuiAppBarProps {
-  open?: boolean;
-}
-
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== "open",
-})<AppBarProps>(({ theme }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(["width", "margin"], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  variants: [
-    {
-      props: ({ open }) => open,
-      style: {
-        marginLeft: drawerWidth,
-        width: `calc(100% - ${drawerWidth}px)`,
-        transition: theme.transitions.create(["width", "margin"], {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-      },
-    },
-  ],
-}));
-
-const Drawer = styled(MuiDrawer, {
-  shouldForwardProp: (prop) => prop !== "open",
-})(({ theme }) => ({
-  width: drawerWidth,
-  flexShrink: 0,
-  whiteSpace: "nowrap",
-  boxSizing: "border-box",
-  variants: [
-    {
-      props: ({ open }) => open,
-      style: {
-        ...openedMixin(theme),
-        "& .MuiDrawer-paper": openedMixin(theme),
-      },
-    },
-    {
-      props: ({ open }) => !open,
-      style: {
-        ...closedMixin(theme),
-        "& .MuiDrawer-paper": closedMixin(theme),
-      },
-    },
-  ],
-}));
+const routes: { [key: string]: string } = {
+  "/home": "Boleteria",
+  "/home/ticket": "Boleteria",
+  "/home/reports": "Reportes",
+};
 
 const HomeLayout: React.FC = () => {
-  // const navigate = useNavigate();
-//   const themes = useTheme();
   const [open, setOpen] = React.useState(false);
+  const [currentTime, setCurrentTime] = React.useState<string>("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+
+  const { name, logout } = useAuthStore();
+
+  const pageTitle: string = routes[location.pathname] || "Página desconocida";
+
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const formattedTime = `${now.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })} ${now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+      setCurrentTime(formattedTime);
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup
+  }, []);
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -122,33 +70,49 @@ const HomeLayout: React.FC = () => {
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            sx={[
-              {
-                marginRight: 5,
-              },
-              open && { display: "none" },
-            ]}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Mini variant drawer
-          </Typography>
+      <HomeAppBar position="fixed" open={open}>
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          {/* Left: Page Title */}
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                onClick={handleDrawerOpen}
+                edge="start"
+                sx={[ { marginRight: 4 }, open && { display: "none" }]}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div">
+              {pageTitle}
+            </Typography>
+          </Box>
+          {/* Right: User Name, Time, and Switch */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {/* Switch Button */}
+            <ThemeSwitch
+                checked={theme === "dark"}
+                onChange={toggleTheme}
+                inputProps={{ "aria-label": "theme toggle" }}
+            />
+            <Divider orientation="vertical" flexItem />
+            {/* Username */}
+            <Typography variant="body1">
+              <span style={{ fontWeight: 200 }}>Bienvenido(a)</span>{" "}
+              <span style={{ fontWeight: "bold" }}>{name}</span>
+            </Typography>
+            <Divider orientation="vertical" flexItem />
+            {/* Current Time */}
+            <Typography variant="body1">{currentTime}</Typography>
+          </Box>
         </Toolbar>
-      </AppBar>
-      <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
+      </HomeAppBar>
+      <HomeDrawer variant="permanent" open={open}>
+        <HomeDrawerHeader>
           <IconButton onClick={handleDrawerClose}>
             <ChevronLeftIcon />
           </IconButton>
-        </DrawerHeader>
+        </HomeDrawerHeader>
         <Divider />
         <List>
           <ListItem disablePadding sx={{ display: "block" }}>
@@ -158,14 +122,10 @@ const HomeLayout: React.FC = () => {
                   minHeight: 48,
                   px: 2.5,
                 },
-                open
-                  ? {
-                      justifyContent: "initial",
-                    }
-                  : {
-                      justifyContent: "center",
-                    },
+                open ? { justifyContent: "initial" } : { justifyContent: "center" },
               ]}
+              onClick={() => navigate("ticket")}
+              selected={location.pathname === "/home/ticket" || location.pathname === "/home"}
             >
               <ListItemIcon
                 sx={[
@@ -191,12 +151,10 @@ const HomeLayout: React.FC = () => {
                   minHeight: 48,
                   px: 2.5,
                 },
-                open
-                  ? { justifyContent: "initial" }
-                  : {
-                      justifyContent: "center",
-                    },
+                open ? { justifyContent: "initial" } : { justifyContent: "center" },
               ]}
+              selected={location.pathname === "/home/reports"}
+              onClick={() => navigate("reports")}
             >
               <ListItemIcon
                 sx={[
@@ -225,14 +183,9 @@ const HomeLayout: React.FC = () => {
                   minHeight: 48,
                   px: 2.5,
                 },
-                open
-                  ? {
-                      justifyContent: "initial",
-                    }
-                  : {
-                      justifyContent: "center",
-                    },
+                open ? { justifyContent: "initial" } : { justifyContent: "center" },
               ]}
+                onClick={() => logout()}
             >
               <ListItemIcon
                 sx={[
@@ -252,10 +205,10 @@ const HomeLayout: React.FC = () => {
             </ListItemButton>
           </ListItem>
         </List>
-      </Drawer>
+      </HomeDrawer>
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <DrawerHeader />
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        <HomeDrawerHeader />
         <Outlet />
       </Box>
     </Box>

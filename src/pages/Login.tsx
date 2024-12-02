@@ -3,12 +3,14 @@ import {useAuthStore} from "../store/AuthStore.ts";
 import {TextField, Box, Typography, Grid2, Paper} from "@mui/material";
 import {LoadingButton} from "@mui/lab";
 import { useNavigate } from "react-router";
+import { useLocation } from "react-router-dom";
 
 import backgroundLogo from "../assets/background.png";
 import logo from "../assets/white_logo.png";
 
 import {useTheme} from "../themes/ThemeProvider.tsx";
 import {ThemeSwitch} from "../components/ThemeSwitch.tsx";
+import CssBaseline from "@mui/material/CssBaseline";
 
 
 const Login: React.FC = () => {
@@ -19,29 +21,33 @@ const Login: React.FC = () => {
     const { login } = useAuthStore();
     const navigate = useNavigate();
 
-    const { toggleTheme } = useTheme();
+    const location = useLocation()
+
+    const { theme, toggleTheme } = useTheme();
 
     const handleLogin = () => {
+        console.log(location.pathname)
         if (!username) {
-            setError({username: "Username is required", password: ""});
+            setError({username: "Username es requerido", password: ""});
             return;
         }
         if (!password) {
-            setError({username: "", password: "Password is required"});
+            setError({username: "", password: "Password es requerid"});
             return;
         }
         setLoading(true);
         setTimeout(() => {
             console.log("Logging in...");
-            login(username);
+            login(username, "Administrador");
             setLoading(false);
 
-            navigate("home"); // Navigate to HomeLayout
+            navigate("/home"); // Navigate to HomeLayout
         }, 1000);
     }
 
     return (
         <Grid2 container sx={{ height: '100vh', margin: 0 }}>
+            <CssBaseline />
             {/* Left Side */}
             <Grid2 size={{ xs: 12, md: 6}} style={{ height: '100%' }}>
                 <Box
@@ -131,6 +137,7 @@ const Login: React.FC = () => {
             <Grid2  size={{ xs: 12, md: 6}} style={{ height: '100%' }}>
                 <Box  sx={{ width: "100%" }}>
                     <ThemeSwitch
+                        checked={theme === "dark"}
                         onClick={toggleTheme}
                         sx={{
                             position: 'absolute',
@@ -200,7 +207,6 @@ const Login: React.FC = () => {
                                 <LoadingButton
                                     fullWidth
                                     loading={loading}
-                                    loadingPosition="start"
                                     size={"large"}
                                     variant="contained"
                                     color="secondary"
