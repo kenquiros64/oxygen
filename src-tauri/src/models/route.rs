@@ -1,5 +1,5 @@
 use crate::models::stop::Stop;
-use crate::models::timetable::Timetable;
+use crate::models::time::Time;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,6 @@ pub struct Route {
     pub departure: String,
     pub destination: String,
     pub stops: Vec<Stop>,
-    pub timetable: Timetable,
-    pub holiday_timetable: Timetable,
+    pub timetable: Vec<Time>,
+    pub holiday_timetable: Vec<Time>,
 }

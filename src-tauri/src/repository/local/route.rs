@@ -32,8 +32,8 @@ impl RoutesRepository {
 
         let mut routes = Vec::new();
 
-        while let Some(user) = cursor.next() {
-            routes.push(user.context("Failed to get user")?);
+        while let Some(route) = cursor.next() {
+            routes.push(route.context("Failed to get route")?);
         }
 
         Ok(routes)

@@ -14,15 +14,15 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import {Outlet, useLocation} from "react-router-dom";
 import {
+  DirectionsBus,
   Logout,
   NotesOutlined,
-  RouteOutlined,
 } from "@mui/icons-material";
 import {useNavigate} from "react-router";
 import {HomeAppBar, HomeDrawer, HomeDrawerHeader} from "../components/HomeDrawer.tsx";
 import {ThemeSwitch} from "../components/ThemeSwitch.tsx";
 import {useTheme} from "../themes/ThemeProvider.tsx";
-import {useAuthStore} from "../store/AuthStore.ts";
+import {useAuthState} from "../states/AuthState.ts";
 
 const routes: { [key: string]: string } = {
   "/home": "Boleteria",
@@ -37,7 +37,7 @@ const HomeLayout: React.FC = () => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  const { name, logout } = useAuthStore();
+  const { user, logout } = useAuthState();
 
   const pageTitle: string = routes[location.pathname] || "Página desconocida";
 
@@ -45,11 +45,11 @@ const HomeLayout: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-      const formattedTime = `${now.toLocaleDateString("en-US", {
+      const formattedTime = `${now.toLocaleDateString("es-CR", {
         month: "long",
         day: "numeric",
         year: "numeric",
-      })} ${now.toLocaleTimeString("en-US", {
+      })} ${now.toLocaleTimeString("es-CR", {
         hour: "2-digit",
         minute: "2-digit",
       })}`;
@@ -87,7 +87,7 @@ const HomeLayout: React.FC = () => {
               {pageTitle}
             </Typography>
           </Box>
-          {/* Right: User Name, Time, and Switch */}
+          {/* Right: username, time, and switch */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {/* Switch Button */}
             <ThemeSwitch
@@ -99,7 +99,7 @@ const HomeLayout: React.FC = () => {
             {/* Username */}
             <Typography variant="body1">
               <span style={{ fontWeight: 200 }}>Bienvenido(a)</span>{" "}
-              <span style={{ fontWeight: "bold" }}>{name}</span>
+              <span style={{ fontWeight: "bold" }}>{user?.name}</span>
             </Typography>
             <Divider orientation="vertical" flexItem />
             {/* Current Time */}
@@ -136,7 +136,7 @@ const HomeLayout: React.FC = () => {
                   open ? { mr: 3 } : { mr: "auto" },
                 ]}
               >
-                <RouteOutlined />
+                <DirectionsBus />
               </ListItemIcon>
               <ListItemText
                 primary={"Boleteria"}
@@ -207,9 +207,11 @@ const HomeLayout: React.FC = () => {
         </List>
       </HomeDrawer>
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1 }}>
+      <Box component="main" sx={{ display: "flex", flexDirection: "column", flexGrow: 1, height: "100vh" }}>
         <HomeDrawerHeader />
-        <Outlet />
+        <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

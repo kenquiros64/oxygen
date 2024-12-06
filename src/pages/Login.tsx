@@ -1,9 +1,7 @@
 import React, { useState }  from "react";
-import {useAuthStore} from "../store/AuthStore.ts";
 import {TextField, Box, Typography, Grid2, Paper} from "@mui/material";
 import {LoadingButton} from "@mui/lab";
 import { useNavigate } from "react-router";
-import { useLocation } from "react-router-dom";
 
 import backgroundLogo from "../assets/background.png";
 import logo from "../assets/white_logo.png";
@@ -11,38 +9,46 @@ import logo from "../assets/white_logo.png";
 import {useTheme} from "../themes/ThemeProvider.tsx";
 import {ThemeSwitch} from "../components/ThemeSwitch.tsx";
 import CssBaseline from "@mui/material/CssBaseline";
+import {ArrowForward} from "@mui/icons-material";
+import {useAuthState} from "../states/AuthState.ts";
+import { ErrorResponse } from "../models/models.ts";
 
 
 const Login: React.FC = () => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState({username: "", password: ""});
+    const [inputError, setInputError] = useState({username: "", password: ""});
     const [loading, setLoading] = useState(false);
-    const { login } = useAuthStore();
+    const { login } = useAuthState();
     const navigate = useNavigate();
-
-    const location = useLocation()
 
     const { theme, toggleTheme } = useTheme();
 
-    const handleLogin = () => {
-        console.log(location.pathname)
+    const handleLogin = async () => {
         if (!username) {
-            setError({username: "Username es requerido", password: ""});
+            setInputError({username: "Username es requerido", password: ""});
             return;
         }
         if (!password) {
-            setError({username: "", password: "Password es requerid"});
+            setInputError({username: "", password: "Password es requerido"});
             return;
         }
+        
         setLoading(true);
-        setTimeout(() => {
-            console.log("Logging in...");
-            login(username, "Administrador");
-            setLoading(false);
-
+        login(username, password).then(() => {
             navigate("/home"); // Navigate to HomeLayout
-        }, 1000);
+        }).catch((error: ErrorResponse) => {
+            console.log("Error: ", error);
+            if (error?.code === 1) {
+                setInputError({username: error.error, password: ""});
+            }
+            if (error?.code === 2) {
+                setInputError({username: "", password: error.error});
+            }
+        }).finally(() => {
+            setLoading(false)
+        });
+
     }
 
     return (
@@ -182,10 +188,10 @@ const Login: React.FC = () => {
                                     value={username}
                                     onChange={(e) => {
                                         setUsername(e.target.value);
-                                        setError((prev) => ({ ...prev, username: "" }));
+                                        setInputError((prev) => ({ ...prev, username: "" }));
                                     }}
-                                    error={ error.username !== "" }
-                                    helperText={error.username ? "El nombre de usuario es requerido" : ""}
+                                    error={ inputError.username !== "" }
+                                    helperText={inputError.username ? inputError.username : ""}
                                     style={{ marginBottom: "2rem" }}
                                 />
                                 <TextField
@@ -196,10 +202,10 @@ const Login: React.FC = () => {
                                     value={password}
                                     onChange={(e) => {
                                         setPassword(e.target.value);
-                                        setError((prev) => ({ ...prev, password: "" }));
+                                        setInputError((prev) => ({ ...prev, password: "" }));
                                     }}
-                                    error={error.password !== ""}
-                                    helperText={error.password ? "La contraseña es requerida" : ""}
+                                    error={inputError.password !== ""}
+                                    helperText={inputError.password ? inputError.password : ""}
                                     style={{ marginBottom: "2rem" }}
                                 />
 
@@ -207,11 +213,13 @@ const Login: React.FC = () => {
                                 <LoadingButton
                                     fullWidth
                                     loading={loading}
+                                    loadingPosition={"end"}
                                     size={"large"}
                                     variant="contained"
                                     color="secondary"
-                                    sx={{ fontSize: 16, fontWeight: '200' }}
+                                    sx={{ fontSize: 17, fontWeight: '200' }}
                                     onClick={handleLogin}
+                                    endIcon={<ArrowForward />}
                                 >
                                     Ingresar
                                 </LoadingButton>

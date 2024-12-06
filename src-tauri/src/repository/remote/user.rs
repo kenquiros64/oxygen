@@ -6,6 +6,7 @@ use futures::stream::StreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_document};
 use mongodb::{Collection, Database};
+use crate::enums::error::ErrorType;
 
 const USER_COLLECTION: &str = "users";
 
@@ -22,19 +23,22 @@ impl UserRepository {
     }
 
     // add_user adds a new user in the database if username does not exist
-    pub async fn add_user(&self, user: User) -> Result<bool, anyhow::Error> {
+    pub async fn add_user(&self, user: User) -> Result<bool, ErrorType> {
         let user_exists = self
             .coll
             .find_one(doc! { "username": &user.username })
             .await
-            .context("Failed to check if user exists")?;
+            .map_err(|e| ErrorType::Error(e.to_string()))?;
 
         if user_exists.is_some() {
-            return Err(anyhow::anyhow!("User already exists"));
+            return Err(ErrorType::UserNotFound);;
         }
 
         let hashed_password =
-            bcrypt::hash(user.password, bcrypt::DEFAULT_COST).context("Failed to hash password")?;
+            bcrypt::hash(
+                user.password,
+                bcrypt::DEFAULT_COST
+            ).map_err(|e| ErrorType::Error(e.to_string()))?;
 
         let new_user = User {
             id: Some(ObjectId::new()),
@@ -49,7 +53,7 @@ impl UserRepository {
         self.coll
             .insert_one(new_user)
             .await
-            .context("Failed to insert user")?;
+            .map_err(|e| ErrorType::Error("Failed to insert user".to_string()))?;
 
         Ok(true)
     }

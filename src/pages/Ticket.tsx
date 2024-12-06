@@ -1,64 +1,58 @@
-import React, { useState }  from "react";
-import {useTicketStore} from "../store/TicketStore.ts";
-import {Box, CardContent, Grid2, TextField, Typography} from "@mui/material";
-import CssBaseline from "@mui/material/CssBaseline";
+import React, {useEffect} from "react";
+import {useTicketState} from "../states/TicketState.ts";
+import {
+    Box,
+    Grid2,
+    TextField,
+} from "@mui/material";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
-import {QuestionMarkOutlined} from "@mui/icons-material";
-import { Card, CardOverflow }  from '@mui/joy';
+import {
+    QuestionMarkOutlined,
+} from "@mui/icons-material";
+import HomeCard from "../components/HomeCard.tsx";
+import {useRoutesStore} from "../stores/RoutesStore.ts";
 
 
 const Ticket: React.FC = () => {
-
+    const { routes, fetchRoutes } = useRoutesStore();
     const {
-        selectedRoute,
-        selectedStop,
-        selectedTime,
-        selectedTimetable,
         setSelectedRoute,
         setSelectedStop,
-        setSelectedTime,
-        setSelectedTimetable,
-        incrementCount,
-        getRouteStopTimeCount,
-        getTotalCountForRouteTime,
-      } = useTicketStore();
+        setSelectedTimetable
+    } = useTicketState();
 
-      // Local state for inputs
-      const [code, setCode] = useState("");
-      // const [error, setError] = useState({code: ""});
-      const [routeInput, setRouteInput] = useState("");
-      const [stopInput, setStopInput] = useState("");
-      const [timeInput, setTimeInput] = useState("");
+    useEffect(() => {
+        // Fetch routes when the component mounts
+        fetchRoutes();
+      }, [fetchRoutes]);
+    
+      useEffect(() => {
+        if (routes.length > 0) {
+            let stopIndex = routes[0].stops.findIndex((stop) => stop.isMain);
 
-      // Handler functions
-      const handleSelectRoute = () => {
-        setSelectedRoute(routeInput);
-        setRouteInput("");
-      };
-
-      const handleSelectStop = () => {
-        setSelectedStop(stopInput);
-        setStopInput("");
-      };
-
-      const handleSelectTime = () => {
-        setSelectedTime(timeInput);
-        setTimeInput("");
-      };
+            console.log("ROUTES: " + routes)
+            setSelectedRoute(routes[0]);
+            setSelectedTimetable('normal');
+            setSelectedStop(routes[0].stops[stopIndex]);
+        }
+      }, [routes, setSelectedRoute, setSelectedTimetable, setSelectedStop]);
+    
+    const {
+        code, setCode,
+    } = useTicketState();
 
       return (
-          <Grid2 container sx={{ height: '100vh', margin: 0 }}>
-              <CssBaseline />
-              <Grid2 size={{ xs: 4 }}
-                     sx={{ display: 'flex', flexDirection: 'column', height: '100%', margin: 1
+          <Grid2 container sx={{ height: '100%', margin: 0 }}>
+              <Grid2 size="grow" sx={{
+                  display: 'flex', flexDirection: 'column', height: '100%', padding: 2, gap: 2
               }}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <TextField
                           label="Code"
                           type="text"
                           variant="outlined"
-                          value={code}
+                          value={code ?? ""}
                           onChange={(e) => {
                               setCode(e.target.value);
                               // setError((prev) => ({ ...prev, password: "" }));
@@ -67,46 +61,20 @@ const Ticket: React.FC = () => {
                           // helperText={error.password ? "La contraseña es requerida" : ""}
                           style={{ flexGrow: 1 }}
                       />
-                      <IconButton aria-label="delete" disabled color="primary">
+                      <IconButton aria-label="faq-code" color="primary">
                           <QuestionMarkOutlined />
                       </IconButton>
                   </Box>
-                  <Card sx={{ borderRadius: 0, width: 300, maxWidth: '100%' }}>
-                      <CardContent>
-                          <Typography >IN DESIGN</Typography>
-                          <Typography >AFSL Web App</Typography>
-                      </CardContent>
-                      <CardOverflow
-                          sx={{
-                              display: 'flex',
-                              flexDirection: 'row',
-                              gap: 1,
-                              justifyContent: 'space-around',
-                              py: 1,
-                              borderTop: '1px solid',
-                              borderColor: 'divider',
-                          }}
-                      >
-                          <Typography>
-                              13
-                          </Typography>
-                          <Divider orientation="vertical" />
-                          <Typography >
-                              9
-                          </Typography>
-                          <Divider orientation="vertical" />
-                          <Typography >
-                              32
-                          </Typography>
-                      </CardOverflow>
-                  </Card>
+                  <Box sx={{ alignItems: 'center', display: 'flex', height: '100%' }}>
+                    <HomeCard />
+                  </Box>
               </Grid2>
               <Divider sx={{ height: '100%' }} orientation={"vertical"} flexItem />
-              <Grid2 size={{ xs: 4 }} style={{ height: '100%' }}>
+              <Grid2 size="grow" sx={{ height: '100%' }}>
                   2
               </Grid2>
               <Divider sx={{ height: '100%' }} orientation={"vertical"} flexItem />
-              <Grid2 size={{ xs: 4 }} style={{ height: '100%' }}>
+              <Grid2 size="grow" sx={{ height: '100%' }}>
                   3
               </Grid2>
           </Grid2>

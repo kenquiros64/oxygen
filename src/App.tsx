@@ -1,6 +1,6 @@
 import React from "react";
 import {Navigate, Route, HashRouter, Routes} from "react-router-dom";
-import {useAuthStore} from "./store/AuthStore.ts";
+import {useAuthState} from "./states/AuthState.ts";
 // import reactLogo from "./assets/react.svg";
 // import { invoke } from "@tauri-apps/api/core";
 
@@ -91,7 +91,7 @@ import "./App.css";
 // }
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const isAuthenticated = useAuthStore((state) => state.user !== null);
+    const isAuthenticated = useAuthState((state) => state.user !== null);
 
     if (!isAuthenticated) {
         return <Navigate to="/login" />;

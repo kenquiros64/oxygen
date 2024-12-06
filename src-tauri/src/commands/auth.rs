@@ -1,21 +1,16 @@
+use crate::enums::error::{map_error};
 use crate::models::user::User;
 use crate::services::auth;
-use anyhow::Context;
+use crate::models::error::ErrorResponse;
 
 #[tauri::command]
-pub fn login(username: &str, password: &str) -> Result<User, anyhow::Error> {
-    let user = auth::login(username, password).context("Failed to login")?;
-    println!("Logged in as {}", user.username);
-
-    Ok(user)
+pub fn login(username: String, password: String) -> Result<User, ErrorResponse> {
+    println!("Logging in user: {}-{}", username, password);
+    auth::login(&username, &password).map_err(map_error)
 }
 
-#[tauri::command]
-pub async fn register(user: User) -> Result<(), anyhow::Error> {
-    auth::register(user.clone())
-        .await
-        .context("Failed to register")?;
-    println!("Registered user {}", user.username);
 
-    Ok(())
+#[tauri::command]
+pub async fn register(user: User) -> Result<(), ErrorResponse> {
+    auth::register(user).await.map_err(map_error)
 }

@@ -1,4 +1,5 @@
 import {create} from "zustand/index";
+import {Route, Stop, Time} from "../models/models.ts";
 
 type RouteStopTimeCount = {
   [route: string]: {
@@ -9,32 +10,39 @@ type RouteStopTimeCount = {
 };
 
 interface TicketState {
-    selectedRoute: string | null;
-    selectedStop: string | null;
-    selectedTime: string | null;
+    // SELECTED
+    selectedRoute: Route | null;
+    selectedStop: Stop | null;
     selectedTimetable: string | null;
+    selectedTime: Time | null;
 
+    // VALUES
+    code: string | null;
     routeStopTimeCounts: RouteStopTimeCount;
     totalCountsForRouteTime: { [route: string]: { [time: string]: number } };
-  
-    setSelectedRoute: (route: string) => void;
-    setSelectedStop: (stop: string) => void;
-    setSelectedTime: (time: string) => void;
+
+    // ACTIONS
+    setSelectedRoute: (route: Route) => void;
+    setSelectedStop: (stop: Stop) => void;
+    setSelectedTime: (time: Time) => void;
     setSelectedTimetable: (timetable: string) => void;
+    setCode: (code: string) => void;
   
     incrementCount: (route: string, stop: string, time: string) => void;
     getRouteStopTimeCount: (route: string, stop: string, time: string) => number;
     getTotalCountForRouteTime: (route: string, time: string) => number;
 }
 
-export const useTicketStore = create<TicketState>((set, get) => ({
+export const useTicketState = create<TicketState>((set, get) => ({
     selectedRoute: null,
     selectedStop: null,
     selectedTime: null,
     selectedTimetable: null,
+    routes: [],
+    code: null,
     routeStopTimeCounts: {},
     totalCountsForRouteTime: {},
-  
+
     setSelectedRoute: (route) =>
       set(() => ({
         selectedRoute: route,
@@ -51,6 +59,10 @@ export const useTicketStore = create<TicketState>((set, get) => ({
       set(() => ({
         selectedTimetable: timetable,
       })),
+    setCode: (code) =>
+        set(() => ({
+            code: code,
+        })),
   
     incrementCount: (route, stop, time) =>
       set((state) => {

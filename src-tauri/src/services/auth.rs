@@ -2,34 +2,45 @@ use crate::db::{mongo, polo};
 use crate::models::user::User;
 use anyhow::Context;
 use bcrypt;
+use futures::TryFutureExt;
+use crate::enums::error::ErrorType;
 
 // login logs in a user
-pub fn login(username: &str, password: &str) -> Result<User, anyhow::Error> {
+pub fn login(username: &str, password: &str) -> Result<User, ErrorType> {
+    // Attempt to connect to the database
     let polo = polo::connect_polo();
 
     let polo_repo = crate::repository::local::user::UserRepository::new(&polo);
 
-    let user = polo_repo.find_user(username).unwrap();
+    // Find the user in the repository
+    let user = polo_repo
+        .find_user(username)
+        .map_err(|e| ErrorType::Error(e.to_string()))?;
 
     if user.is_none() {
-        return Err(anyhow::anyhow!("User not found"));
+        return Err(ErrorType::UserNotFound);
     }
 
     let user = user.unwrap();
 
-    let verified = bcrypt::verify(password, &user.password).context("Failed to verify password")?;
+    // Verify the password
+    println!("PASSWORD: {}", &user.password);
+    let verified = bcrypt::verify(password, &user.password)
+        .map_err(|e| ErrorType::Error(e.to_string()))?;
+    println!("VERIFIED: {}", verified);
+
     if !verified {
-        return Err(anyhow::anyhow!("Invalid password"));
+        return Err(ErrorType::InvalidPassword);
     }
 
     Ok(user)
 }
 
 // register registers a new user
-pub async fn register(user: User) -> Result<(), anyhow::Error> {
+pub async fn register(user: User) -> Result<(), ErrorType> {
     let mongodb = mongo::connect_mongo()
         .await
-        .context("Failed to connect to MongoDB")?;
+        .map_err(|e| ErrorType::Error(e.to_string()))?;
     let mongo_repo = crate::repository::remote::user::UserRepository::new(&mongodb);
 
     // Connect to Polo
@@ -39,14 +50,14 @@ pub async fn register(user: User) -> Result<(), anyhow::Error> {
     // Add user to MongoDB
     if let Err(e) = mongo_repo.add_user(user.clone()).await {
         eprintln!("Failed to add user to MongoDB: {}", e);
-        return Err(e).context("Adding user to MongoDB failed");
+        return Err(e);
     }
     println!("User added to MongoDB successfully.");
 
     // Add user to Polo
     polo_repo
         .add_user(user)
-        .context("Failed to add user to Polo")?;
+        .map_err(|e| ErrorType::Error(e.to_string()))?;
 
     println!("User added to Polo successfully.");
     Ok(())
