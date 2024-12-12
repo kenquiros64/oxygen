@@ -1,16 +1,14 @@
 import React from "react";
 import {Navigate, Route, HashRouter, Routes} from "react-router-dom";
-import {useAuthState} from "./states/AuthState.ts";
-// import reactLogo from "./assets/react.svg";
-// import { invoke } from "@tauri-apps/api/core";
-
 import Login from "./pages/Login.tsx";
 import HomeLayout from "./pages/HomeLayout.tsx";
 import Ticket from "./pages/Ticket.tsx";
 import Reports from "./pages/Reports.tsx";
-
-
 import "./App.css";
+import {useAuthState} from "./states/AuthState.ts";
+import {ToastContainer} from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+
 // import "./themes/themes.css";
 // function App() {
 //   const [greetMsg, setGreetMsg] = useState("");
@@ -102,42 +100,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => {
 
-    // const toggleTheme = async () => {
-    //     const newTheme = theme === "light" ? "dark" : "light";
-    //     setTheme(newTheme);
-    //     await saveTheme(newTheme);
-    // };
-    //
-    // const saveTheme = async (theme: Theme) => {
-    //     try {
-    //         await store.set("theme", theme);
-    //         await store.save();
-    //     } catch (error) {
-    //         console.error("Failed to save theme:", error);
-    //     }
-    // };
-    //
-    // const loadTheme = async () => {
-    //     try {
-    //
-    //         if (storedTheme) {
-    //             setTheme(storedTheme as Theme);
-    //         }
-    //     } catch (error) {
-    //         console.error("Failed to load theme:", error);
-    //     }
-    // };
-    //
-    // useEffect(() => {
-    //     loadTheme();
-    // }, []);
-    //
-    // // Apply theme to the body tag
-    // useEffect(() => {
-    //     document.body.className = theme; // Dynamically set body class
-    // }, [theme]);
-
-
     return (
         <HashRouter>
             <Routes>
@@ -158,6 +120,7 @@ const App: React.FC = () => {
 
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
+            <ToastContainer />
         </HashRouter>
     );
 };

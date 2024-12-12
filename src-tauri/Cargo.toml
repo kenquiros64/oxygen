@@ -27,11 +27,13 @@ chrono = { version = "0.4.38", features = ["serde"] }
 sled = "0.34.7"
 bcrypt = "0.16.0"
 mongodb = "3.1.0"
-tokio = "1.41.1"
+tokio = { version = "1.41.1", features = ["full"] }
 futures = "0.3.31"
 polodb_core = "5.1.3"
 anyhow = "1.0.93"
 uuid = { version = "1.11.0", features = ["v4"] }
 tauri-plugin-store = "2"
 tauri-plugin-notification = "2"
+reqwest = "0.12.9"
+ping-rs = "0.1.2"
 

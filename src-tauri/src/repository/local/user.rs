@@ -47,7 +47,7 @@ impl UserRepository {
     }
 
     // update_user updates a user in the database
-    pub fn update_user(&self, mut user: User) -> Result<(), anyhow::Error> {
+    pub fn update_user(&self, user: User) -> Result<(), anyhow::Error> {
         self.coll
             .update_one(
                 doc! { "username": &user.username },

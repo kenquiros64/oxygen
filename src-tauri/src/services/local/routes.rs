@@ -13,5 +13,5 @@ pub fn fetch_routes() -> Result<Vec<Route>, anyhow::Error> {
         .fetch_routes()
         .context("Failed to fetch routes from PoloDB")?;
 
-    Ok((routes))
+    Ok(routes)
 }

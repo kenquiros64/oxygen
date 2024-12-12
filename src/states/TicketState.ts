@@ -1,98 +1,159 @@
 import {create} from "zustand/index";
-import {Route, Stop, Time} from "../models/models.ts";
+import {Route} from "../models/Route.ts";
+import {Stop} from "../models/Stop.ts";
+import {Time} from "../models/Time.ts";
+import {invoke} from "@tauri-apps/api/core";
 
-type RouteStopTimeCount = {
-  [route: string]: {
-    [stop: string]: {
-      [time: string]: number;
-    };
-  };
-};
 
-interface TicketState {
+type TicketState = {
     // SELECTED
     selectedRoute: Route | null;
     selectedStop: Stop | null;
-    selectedTimetable: string | null;
+    selectedTimetable: 'normal' | 'holiday';
     selectedTime: Time | null;
 
     // VALUES
-    code: string | null;
-    routeStopTimeCounts: RouteStopTimeCount;
-    totalCountsForRouteTime: { [route: string]: { [time: string]: number } };
+    code: string;
+    routeTimeCounts: CounterMap;
+    currentCount: number;
+    currentGoldCount: number;
+    routes: Route[];
+}
 
-    // ACTIONS
+type Actions = {
     setSelectedRoute: (route: Route) => void;
     setSelectedStop: (stop: Stop) => void;
     setSelectedTime: (time: Time) => void;
-    setSelectedTimetable: (timetable: string) => void;
+    setSelectedTimetable: (timetable: 'normal' | 'holiday') => void;
     setCode: (code: string) => void;
-  
-    incrementCount: (route: string, stop: string, time: string) => void;
-    getRouteStopTimeCount: (route: string, stop: string, time: string) => number;
-    getTotalCountForRouteTime: (route: string, time: string) => number;
+
+    incrementCount: (qty: number, type: "normal" | "gold") => void;
+    getAllCounts: () => void;
+    resetTicketState: () => void;
+    getCount: (stop: string) => number;
+    getStopCounts: () => void;
 }
 
-export const useTicketState = create<TicketState>((set, get) => ({
+const initialState: TicketState = {
     selectedRoute: null,
     selectedStop: null,
     selectedTime: null,
-    selectedTimetable: null,
-    routes: [],
-    code: null,
-    routeStopTimeCounts: {},
-    totalCountsForRouteTime: {},
+    selectedTimetable: 'normal',
 
-    setSelectedRoute: (route) =>
-      set(() => ({
-        selectedRoute: route,
-      })),
-    setSelectedStop: (stop) =>
-      set(() => ({
-        selectedStop: stop,
-      })),
-    setSelectedTime: (time) =>
-      set(() => ({
-        selectedTime: time,
-      })),
-    setSelectedTimetable: (timetable) =>
-      set(() => ({
-        selectedTimetable: timetable,
-      })),
-    setCode: (code) =>
-        set(() => ({
-            code: code,
-        })),
-  
-    incrementCount: (route, stop, time) =>
-      set((state) => {
-        const updatedCounts = { ...state.routeStopTimeCounts };
-        if (!updatedCounts[route]) updatedCounts[route] = {};
-        if (!updatedCounts[route][stop]) updatedCounts[route][stop] = {};
-        if (!updatedCounts[route][stop][time]) updatedCounts[route][stop][time] = 0;
-  
-        updatedCounts[route][stop][time] += 1;
-  
-        const updatedTotalCounts = { ...state.totalCountsForRouteTime };
-        if (!updatedTotalCounts[route]) updatedTotalCounts[route] = {};
-        if (!updatedTotalCounts[route][time]) updatedTotalCounts[route][time] = 0;
-  
-        updatedTotalCounts[route][time] += 1;
-  
-        return {
-          routeStopTimeCounts: updatedCounts,
-          totalCountsForRouteTime: updatedTotalCounts,
-        };
-      }),
-  
-    getRouteStopTimeCount: (route, stop, time) => {
-      const counts = get().routeStopTimeCounts;
-      return counts[route]?.[stop]?.[time] || 0;
+    code: "",
+    routeTimeCounts: {},
+    routes: [],
+    currentCount: 0,
+    currentGoldCount: 0,
+}
+
+export const useTicketState = create<TicketState & Actions>()((set, get) => ({
+    ...initialState,
+    setSelectedRoute: (route: Route) => {
+        set({ selectedRoute: route })
     },
-  
-    getTotalCountForRouteTime: (route, time) => {
-      const totalCounts = get().totalCountsForRouteTime;
-      return totalCounts[route]?.[time] || 0;
+    setSelectedStop: (stop: Stop) => {
+        set({ selectedStop: stop })
     },
-  }));
+    setSelectedTime: (time: Time) => {
+        set({ selectedTime: time })
+    },
+    setSelectedTimetable: (timetable: 'normal' | 'holiday') => {
+        set({ selectedTimetable: timetable })
+    },
+    setCode: (code: string) => {
+        set({ code: code })
+    },
+    incrementCount: (qty: number, type: "normal" | "gold") => {
+        const stop = get().selectedStop;
+        if (!stop) {
+            return;
+        }
+        const time = get().selectedTime;
+        if (!time) {
+            return;
+        }
+        const route = get().selectedRoute;
+        if (!route) {
+            return;
+        }
+
+        const routeTimeCounts = get().routeTimeCounts;
+
+        let key = `${route.toKey()}-${stop.name.toLowerCase()}-${time.toShortString()}`;
+        const original = key;
+        if (type === "gold") {
+            key += "-gold";
+        }
+        invoke<number>("increment_stop_counter", { key, qty }).then((value: number) => {
+            if (type === "gold") {
+                set({ currentGoldCount: value });
+            } else {
+                set({ currentCount: value });
+            }
+            routeTimeCounts[original] = (routeTimeCounts[original] || 0) + qty;
+        });
+    },
+    getAllCounts: () => {
+        let selectedRoute = get().selectedRoute;
+        let selectedTime = get().selectedTime;
+        if (!selectedRoute || !selectedTime) {
+            return;
+        }
+
+        const prefixes = selectedRoute?.generateCounterKeys(selectedTime);
+        invoke<CounterMap>("bulk_counts_by_prefixes", { prefixes }).then((counter: CounterMap) => {
+            for (let code in counter) {
+                console.log(`Code: ${code}, Count: ${counter[code]}`);
+            }
+            set({ routeTimeCounts: counter });
+        });
+    },
+    getCount: (stop: string) => {
+        const time = get().selectedTime;
+        if (!time) {
+            return 0;
+        }
+        const route = get().selectedRoute;
+        if (!route) {
+            return 0;
+        }
+
+        const key = `${route.toKey()}-${stop.toLowerCase()}-${time.toShortString()}`;
+        if (!key) {
+            return 0;
+        }
+        return get().routeTimeCounts[key] || 0;
+    },
+    getStopCounts: () => {
+        const selectedRoute = get().selectedRoute;
+        if (!selectedRoute) {
+            return;
+        }
+        const time = get().selectedTime;
+        if (!time) {
+            return 0;
+        }
+        const stop = get().selectedStop?.name;
+        if (!stop) {
+            return 0;
+        }
+
+        const key = `${selectedRoute.toKey()}-${stop.toLowerCase()}-${time.toShortString()}`;
+        invoke<CounterMap>("get_stop_counters", { key }).then((counter: CounterMap) => {
+            set({ currentGoldCount: 0 });
+            set({ currentCount: 0 });
+            for (let code in counter) {
+                if (code.endsWith("gold")) {
+                    set({ currentGoldCount: counter[code] });
+                } else {
+                    set({ currentCount: counter[code] });
+                }
+            }
+        });
+    },
+    resetTicketState: () => {
+        set(initialState)
+    },
+}))
   

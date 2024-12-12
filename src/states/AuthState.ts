@@ -1,15 +1,22 @@
 import { create } from "zustand";
-import {User} from "../models/models.ts";
 import {invoke} from "@tauri-apps/api/core";
+import {User} from "../models/User.ts";
 
-interface AuthState {
+type AuthState = {
     user: User | null;
+}
+
+type Actions = {
     login: (username: string, password: string) => Promise<void>;
     logout: () => void;
 }
 
-export const useAuthState = create<AuthState>((set) => ({
+const initialState: AuthState = {
     user: null,
+}
+
+export const useAuthState = create<AuthState & Actions>()((set) => ({
+    ...initialState,
     login: (username, password) => {
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -25,4 +32,4 @@ export const useAuthState = create<AuthState>((set) => ({
     logout: () => {
         set({ user: null });
     },
-}));
+}))

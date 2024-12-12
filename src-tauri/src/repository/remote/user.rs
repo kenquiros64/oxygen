@@ -7,6 +7,7 @@ use mongodb::bson::oid::ObjectId;
 use mongodb::bson::{doc, to_document};
 use mongodb::{Collection, Database};
 use crate::enums::error::ErrorType;
+use crate::models::error::{ErrorResponse as Error, ErrorResponse};
 
 const USER_COLLECTION: &str = "users";
 
@@ -23,22 +24,28 @@ impl UserRepository {
     }
 
     // add_user adds a new user in the database if username does not exist
-    pub async fn add_user(&self, user: User) -> Result<bool, ErrorType> {
+    pub async fn add_user(&self, user: User) -> Result<bool, Error> {
         let user_exists = self
             .coll
             .find_one(doc! { "username": &user.username })
             .await
-            .map_err(|e| ErrorType::Error(e.to_string()))?;
+            .map_err(|e| ErrorResponse::new(
+                ErrorType::Error,
+                &format!("error while finding user: {}", e))
+            )?;
 
         if user_exists.is_some() {
-            return Err(ErrorType::UserNotFound);;
+            return Err(Error::new(ErrorType::UserAlreadyExists, "Usuario ya existe"));
         }
 
         let hashed_password =
             bcrypt::hash(
                 user.password,
                 bcrypt::DEFAULT_COST
-            ).map_err(|e| ErrorType::Error(e.to_string()))?;
+            ).map_err(|e| ErrorResponse::new(
+                ErrorType::Error,
+                &format!("error while hashing password: {}", e))
+            )?;
 
         let new_user = User {
             id: Some(ObjectId::new()),
@@ -53,7 +60,10 @@ impl UserRepository {
         self.coll
             .insert_one(new_user)
             .await
-            .map_err(|e| ErrorType::Error("Failed to insert user".to_string()))?;
+            .map_err(|e| ErrorResponse::new(
+                ErrorType::Error,
+                &format!("error while inserting user: {}", e))
+            )?;
 
         Ok(true)
     }

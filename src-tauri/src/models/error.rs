@@ -1,8 +1,26 @@
 use serde::Serialize;
+use crate::enums::error::ErrorType;
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ErrorResponse {
-    pub(crate) code: i32,
-    pub(crate) error: String,
-    pub(crate) details: Option<String>,
+    pub code: ErrorType,
+    pub message: String,
+}
+
+impl ErrorResponse {
+    pub fn new(code: ErrorType, message: &str) -> Self {
+        ErrorResponse {
+            code,
+            message: message.to_string(),
+        }
+    }
+}
+
+impl Clone for ErrorResponse {
+    fn clone(&self) -> ErrorResponse {
+        ErrorResponse {
+            code: self.code.clone(),
+            message: self.message.clone(),
+        }
+    }
 }

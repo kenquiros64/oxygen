@@ -1,7 +1,7 @@
 import React from "react";
 import {Box, Button, Card, CardContent, CardMedia, FormControl, MenuItem, Select, SelectChangeEvent, Typography} from "@mui/material";
 import bus1Icon from "../assets/bus1.png";
-import routeIcon from "../assets/routeIcon.png";
+// import routeIcon from "../assets/routeIcon.png";
 import Divider from "@mui/material/Divider";
 import {
     AirlineSeatLegroomNormal,
@@ -9,11 +9,15 @@ import {
     ArrowDropUp,
     DepartureBoard,
     Elderly,
-    Money
 } from "@mui/icons-material";
 import IconButton from "@mui/material/IconButton";
 import {useTheme} from "../themes/ThemeProvider.tsx";
 import {useTicketState} from "../states/TicketState.ts";
+import {Time} from "../models/Time.ts";
+
+// IMAGES
+import routeLight from "../assets/route_light.png";
+import routeDark from "../assets/route_dark.png";
 
 const HomeCard: React.FC = () => {
     const {theme} = useTheme();
@@ -21,18 +25,21 @@ const HomeCard: React.FC = () => {
         selectedTime, setSelectedTime,
         selectedRoute,
         selectedStop,
-        selectedTimetable
+        selectedTimetable,
+        currentCount,
+        currentGoldCount,
+        incrementCount,
+        getStopCounts,
+        getAllCounts,
     } = useTicketState();
-
-    const timetable =
-        selectedTimetable === 'normal'
-            ? selectedRoute?.timetable
-            : selectedRoute?.holidayTimetable;
 
     const handleChange = (event: SelectChangeEvent<string>) => {
         const value = event.target.value as string;
-        const [hour, minute] = value.split(':').map(Number);
-        setSelectedTime({ hour, minute });
+        const time = Time.from12HourString(value)
+
+        setSelectedTime(time);
+        getAllCounts();
+        getStopCounts();
     };
 
     const handleIncrement = () => {
@@ -40,13 +47,14 @@ const HomeCard: React.FC = () => {
             ? selectedRoute?.timetable
             : selectedRoute?.holidayTimetable;
 
+        console.log("INCREASING")
         if (!times || times.length === 0) {
             console.error("Times not found or empty");
             return;
         }
 
         const currentIndex = times.findIndex((time) => {
-            return time.hour === selectedTime?.hour && time.minute === selectedTime?.minute;
+            return  time.hour === selectedTime?.hour && time.minute === selectedTime?.minute;
         });
 
         if (currentIndex === -1) {
@@ -56,6 +64,8 @@ const HomeCard: React.FC = () => {
     
         if (currentIndex < times.length - 1) {
             setSelectedTime(times[currentIndex + 1]);
+            getAllCounts();
+            getStopCounts();
         } else {
             console.warn("Cannot increment: already at the last time");
         }
@@ -82,10 +92,20 @@ const HomeCard: React.FC = () => {
     
         if (currentIndex > 0) {
             setSelectedTime(times[currentIndex - 1]);
+            getAllCounts();
+            getStopCounts();
         } else {
             console.warn("Cannot decremment: already at the first time");
         }
     };
+
+    const handleGoldTicket = () => {
+        incrementCount(1, "gold");
+    }
+
+    const  handleNormalTicket = () => {
+        incrementCount(1, "normal");
+    }
 
     return (
         <Card sx={{ borderRadius: 0, width: '100%', backgroundColor: theme === "light" ? '#FAFAFA' : 'default' }}>
@@ -101,30 +121,45 @@ const HomeCard: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        mb: 2,
                     }}
                 >
                     {/* Left Side - Image */}
-                    <Box sx={{ justifyContent: 'left', width: '35%' }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'left',
+                            alignItems: 'center',
+                            height: '100%', // Let the parent container grow dynamically
+                        }}
+                    >
                         <CardMedia
                             component="img"
-                            image={routeIcon}
+                            image={theme === "light" ? routeLight : routeDark}
                             title="bus"
-                            sx={{ height: "90px", width: '60px', ml: 2 }}
+                            sx={{
+                                height: 'auto', // Dynamically adjusts height
+                                width: '75%',   // Adjusts width based on parent size
+                                maxWidth: '200px', // Prevents it from growing too large
+                                minWidth: '50px',  // Prevents it from shrinking too small
+                                objectFit: 'contain', // Keeps image aspect ratio
+                                mt: 1,
+                                ml: 2,
+                            }}
                         />
                     </Box>
+
                     {/* Right Side - Text */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'left', width: '65%' }}>
-                        <Typography variant="h5" sx={{ mb: 2, pb: 2, color: "text.secondary", fontWeight: "200" }}>
+                        <Typography variant="h5" sx={{ mb:2, pb:3 , color: "text.secondary", fontWeight: "800" }}>
                             {selectedRoute?.departure}
                         </Typography>
-                        <Typography variant="h5" sx={{ color: "text.secondary", fontWeight: "200" }} >
+                        <Typography variant="h5" sx={{ color: "text.secondary", fontWeight: "800" }} >
                             {selectedRoute?.destination}
                         </Typography>
                     </Box>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: "center" }}>
-                    <Typography variant="h3" color="primary" textAlign="center">
+                    <Typography variant="h3" color="primary" sx={{ textAlign:"center" }}>
                         {selectedStop?.name}
                     </Typography>
                 </Box>
@@ -153,42 +188,46 @@ const HomeCard: React.FC = () => {
                     >
                         <Select
                             value={
-                                selectedTime
-                                    ? `${selectedTime.hour.toString().padStart(2, '0')}:${selectedTime.minute
-                                        .toString()
-                                        .padStart(2, '0')}`
-                                    : ''
+                                selectedTime?.to12HourString()
                             }
+                            key={selectedTime?.toShortString()}
                             onChange={handleChange}
                             displayEmpty
-                            renderValue={(time) => (
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <DepartureBoard fontSize="large" sx={{ mr: 1, color: 'gray', pb: 0.5 }} />
-                                    <Box sx={{ fontWeight: 'bold', fontSize: '2.3rem' }}>
-                                        {time || 'Select Time'}
+                            renderValue={(time) => {
+                                return (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <DepartureBoard fontSize="large" sx={{ mr: 1, color: 'gray', pb: 0.5 }} />
+                                        <Box sx={{ fontWeight: 'bold', fontSize: '2.3rem' }}>
+                                            {time}
+                                        </Box>
                                     </Box>
-                                </Box>
-                            )}
+                                );
+                            }}
                             sx={{
                                 fontSize: '2.3rem',
                                 fontWeight: 'bold',
                                 '& .MuiSelect-icon': { display: 'none' }, // Hide default dropdown icon
                             }}
                         >
-                            {timetable?.length ? (
-                                timetable.map((time) => (
-                                    <MenuItem
-                                        key={`${time.hour}:${time.minute}`}
-                                        value={`${time.hour}:${time.minute}`}
-                                    >
-                                        {`${time.hour.toString().padStart(2, '0')}:${time.minute
-                                            .toString()
-                                            .padStart(2, '0')}`}
-                                    </MenuItem>
-                                ))
-                            ) : (
-                                <MenuItem disabled>No times available</MenuItem>
-                            )}
+                           {(() => {
+                                const timetable =
+                                    selectedTimetable === 'normal'
+                                        ? selectedRoute?.timetable
+                                        : selectedRoute?.holidayTimetable;
+
+                                if (timetable?.length) {
+                                    return timetable.map((time) => {
+                                        const timeString = time.to12HourString();
+                                        return (
+                                            <MenuItem key={time.toShortString()} value={timeString}>
+                                                {timeString}
+                                            </MenuItem>
+                                        );
+                                    });
+                                } else {
+                                    return <MenuItem disabled>No times available</MenuItem>;
+                                }
+                            })()}
                         </Select>
                     </FormControl>
                     <Box sx={{ display: 'flex', alignItems:"center", flexDirection:"column", ml:1 }}   >
@@ -214,18 +253,18 @@ const HomeCard: React.FC = () => {
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AirlineSeatLegroomNormal color="secondary" fontSize={"large"} />
-                    <Typography variant="h5" sx={{ fontWeight: '200' }}>13</Typography>
+                    <Elderly sx={{ color: "#FFC107" }} fontSize={"large"} />
+                    <Typography variant="h5" sx={{ fontWeight: '200' }}>{currentGoldCount}</Typography>
                 </Box>
                 <Divider orientation="vertical" flexItem />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Elderly sx={{ color: "#FFC107" }} fontSize={"large"} />
-                    <Typography variant="h5" sx={{ fontWeight: '200' }}>9</Typography>
+                    <AirlineSeatLegroomNormal color="secondary" fontSize={"large"} />
+                    <Typography variant="h5" sx={{ fontWeight: '200' }}>{currentCount}</Typography>
                 </Box>
                 <Divider orientation="vertical" flexItem />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="h5" sx={{ fontWeight: '200' }}>Total:</Typography>
-                    <Typography variant="h5" sx={{ fontWeight:"bold" }}>32</Typography>
+                    <Typography variant="h5" sx={{ fontWeight:"bold" }}>{currentCount+currentGoldCount}</Typography>
                 </Box>
             </Box>
             <Box
@@ -243,23 +282,21 @@ const HomeCard: React.FC = () => {
                     // loading={loading}
                     size={"large"}
                     variant="contained"
-                    startIcon={<Money />}
                     sx={{ fontSize: 20, py: 2, borderRadius: 0, backgroundColor: "#FBC02D" }}
-                    // onClick={handleLogin}
+                    onClick={handleGoldTicket}
                 >
-                    ₡0
+                    ₡{selectedStop?.goldFare}
                 </Button>
                 <Button
                     fullWidth
                     // loading={loading}
                     size={"large"}
                     variant="contained"
-                    startIcon={<Money />}
                     color="secondary"
                     sx={{ fontSize: 20, py: 2, borderRadius: 0 }}
-                    // onClick={handleLogin}
+                    onClick={handleNormalTicket}
                 >
-                    ₡300
+                    ₡{selectedStop?.fare}
                 </Button>
             </Box>
         </Card>

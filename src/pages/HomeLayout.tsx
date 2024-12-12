@@ -23,6 +23,8 @@ import {HomeAppBar, HomeDrawer, HomeDrawerHeader} from "../components/HomeDrawer
 import {ThemeSwitch} from "../components/ThemeSwitch.tsx";
 import {useTheme} from "../themes/ThemeProvider.tsx";
 import {useAuthState} from "../states/AuthState.ts";
+import {useTicketState} from "../states/TicketState.ts";
+import {useRoutesState} from "../states/RoutesState.ts";
 
 const routes: { [key: string]: string } = {
   "/home": "Boleteria",
@@ -38,6 +40,8 @@ const HomeLayout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const { user, logout } = useAuthState();
+  const { resetTicketState } = useTicketState();
+  const { resetRoutesState } = useRoutesState();
 
   const pageTitle: string = routes[location.pathname] || "Página desconocida";
 
@@ -110,7 +114,7 @@ const HomeLayout: React.FC = () => {
       <HomeDrawer variant="permanent" open={open}>
         <HomeDrawerHeader>
           <IconButton onClick={handleDrawerClose}>
-            <ChevronLeftIcon />
+            <ChevronLeftIcon sx={{ color:"white" }} />
           </IconButton>
         </HomeDrawerHeader>
         <Divider />
@@ -185,7 +189,11 @@ const HomeLayout: React.FC = () => {
                 },
                 open ? { justifyContent: "initial" } : { justifyContent: "center" },
               ]}
-                onClick={() => logout()}
+                onClick={() => {
+                  logout();
+                  resetRoutesState();
+                  resetTicketState();
+                }}
             >
               <ListItemIcon
                 sx={[

@@ -83,5 +83,6 @@ export const HomeDrawerHeader = styled("div")(({ theme }) => ({
     alignItems: "center",
     justifyContent: "flex-end",
     padding: theme.spacing(0, 1),
+    backgroundColor: theme.palette.primary.main,
     ...theme.mixins.toolbar, // necessary for content to be below app bar
 }));

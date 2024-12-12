@@ -1,0 +1,1 @@
+type CounterMap = Record<string, number>;
